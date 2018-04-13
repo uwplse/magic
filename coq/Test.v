@@ -50,3 +50,14 @@ Proof.
 Qed.
 
 (* --- Spells in combination --- *)
+
+Theorem lt_S_m_p_iff:
+  forall n m p : nat, 
+    n < m + S p <-> n < S (p + m).
+Proof.
+  intros.
+  geminio lt_S_m_p.
+  levicorpus lt_S_m_p.
+  constructor; auto.
+Qed. 
+

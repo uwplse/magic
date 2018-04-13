@@ -654,10 +654,19 @@ let invert_body n env evd trm =
   else
     failwith "Could not flip the body upside-down; are you sure this is a human?"
 
+(* Tactic version *)
+let invert_body_in n env evd trm =
+  let inverted = invert env evd trm in
+  if Option.has_some inverted then
+    let flipped = Option.get inverted in
+    letin_pat_tac None n ((evd, evd), flipped) Locusops.nowhere
+  else
+    failwith "Could not flip the body upside-down; are you sure this is a human?"
+
 (* --- Spell top-levels --- *)
 
-let geminio (trm : types) =
-  let (evd, env) = Lemmas.get_current_context() in
+let geminio_in (trm : types) : unit Proofview.tactic =
+  let (evd, env) = Lemmas.get_current_context () in
   letin_pat_tac None Anonymous ((evd, evd), trm) Locusops.nowhere
                     
 let sectumsempra target : unit =
@@ -675,6 +684,11 @@ let sectumsempra target : unit =
       Printf.printf "Defined %s\n" lemma_id_string)
     fs
 
+let levicorpus_in (trm : types) : unit Proofview.tactic =
+  let (evd, env) = Lemmas.get_current_context () in
+  let body = unwrap_definition env trm in
+  invert_body_in Anonymous env evd body
+    
 let levicorpus target : unit =
   let (evd, env) = Lemmas.get_current_context () in
   let trm = intern env evd target in
@@ -692,7 +706,7 @@ let levicorpus target : unit =
  *)
 TACTIC EXTEND geminio
 | [ "geminio" constr(target) ] ->
-  [ geminio target ]
+  [ geminio_in target ]
 END
               
 (* 
@@ -709,8 +723,15 @@ END
  * This is the command version of the spell.
  * For more details, see Snape (1975).
  *)
-VERNAC COMMAND EXTEND InvertCandidate CLASSIFIED AS SIDEFF
+VERNAC COMMAND EXTEND Levicorpus CLASSIFIED AS SIDEFF
 | [ "Levicorpus" constr(target) ] ->
   [ levicorpus target ]
-    END
+END
 
+(* 
+ * Tactic version of the Levicorpus spell.
+ *)
+TACTIC EXTEND levicorpus
+| [ "levicorpus" constr(target) ] ->
+  [ levicorpus_in target ]
+END
