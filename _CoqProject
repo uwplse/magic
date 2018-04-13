@@ -10,6 +10,9 @@ src/lib/basics.ml
 src/lib/coqterms.mli
 src/lib/coqterms.ml
 
+src/lib/printing.mli
+src/lib/printing.ml
+
 src/lib/hofs.mli
 src/lib/hofs.ml
 src/lib/debruijn.mli

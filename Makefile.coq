@@ -199,6 +199,7 @@ endif
 MLFILES:=src/lib/collections.ml\
   src/lib/basics.ml\
   src/lib/coqterms.ml\
+  src/lib/printing.ml\
   src/lib/hofs.ml\
   src/lib/debruijn.ml\
   src/lib/substitution.ml
@@ -228,6 +229,7 @@ endif
 MLIFILES:=src/lib/collections.mli\
   src/lib/basics.mli\
   src/lib/coqterms.mli\
+  src/lib/printing.mli\
   src/lib/hofs.mli\
   src/lib/debruijn.mli\
   src/lib/substitution.mli

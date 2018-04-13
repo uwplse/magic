@@ -17,6 +17,7 @@ open Coqterms
 open Hofs
 open Debruijn
 open Substitution
+open Printing
 (* TODO clean above *)
 
 module CRD = Context.Rel.Declaration

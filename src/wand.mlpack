@@ -3,6 +3,8 @@ Collections
 Basics
 Coqterms
 
+Printing
+
 Hofs
 Debruijn
 Substitution
