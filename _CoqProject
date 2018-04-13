@@ -7,6 +7,8 @@ src/lib/collections.ml
 
 src/lib/basics.mli
 src/lib/basics.ml
+src/lib/coqterms.mli
+src/lib/coqterms.ml
 
 src/magic.ml4
 src/wand.mlpack

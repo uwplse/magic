@@ -197,7 +197,8 @@ endif
 .SECONDARY: $(addsuffix .d,$(ML4FILES))
 
 MLFILES:=src/lib/collections.ml\
-  src/lib/basics.ml
+  src/lib/basics.ml\
+  src/lib/coqterms.ml
 
 ifneq ($(filter-out archclean clean cleanall printenv,$(MAKECMDGOALS)),)
 -include $(addsuffix .d,$(MLFILES))
@@ -222,7 +223,8 @@ endif
 .SECONDARY: $(addsuffix .d,$(MLPACKFILES))
 
 MLIFILES:=src/lib/collections.mli\
-  src/lib/basics.mli
+  src/lib/basics.mli\
+  src/lib/coqterms.mli
 
 ifneq ($(filter-out archclean clean cleanall printenv,$(MAKECMDGOALS)),)
 -include $(addsuffix .d,$(MLIFILES))
