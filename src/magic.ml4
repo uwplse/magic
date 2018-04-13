@@ -26,7 +26,7 @@ let rec range (min : int) (max : int) : int list =
 (* Creates a list from the index 1 to max, inclusive *)
 let from_one_to (max : int) : int list =
   range 1 (max + 1)
-
+        
 (*
  * Get values from a list of optionals only if every optional is some
  * Otherwise, return the empty list
@@ -39,6 +39,23 @@ let get_all_or_none (l : 'a option list) : 'a list =
 
 (* Gets the last element of l *)
 let last (l : 'a list) = List.hd (List.rev l)
+
+(* Constant ID *)
+let k_fresh = ref (1)
+
+(* Get a fresh constant identifier *)
+let fid () : int =
+  let id = !k_fresh in
+  k_fresh := id + 1;
+  id
+
+(* Map3 *)
+let rec map3 (f : 'a -> 'b -> 'c -> 'd) l1 l2 l3 : 'd list =
+  match (l1, l2, l3) with
+  | ([], [], []) ->
+     []
+  | (h1 :: t1, h2 :: t2, h3 :: t3) ->
+     let r = f h1 h2 h3 in r :: map3 f t1 t2 t3
 
 (* --- Plugin basics --- *)
 
@@ -71,7 +88,7 @@ let define_term (n : Id.t) (env : env) (evd : evar_map) (trm : types) : unit =
     (Lemmas.mk_hook (fun _ _ -> ()))
 
 (* --- Basic term and environment management --- *)
-                             
+    
 (* Convertibility *)
 let convertible = Reductionops.is_conv
 
@@ -112,6 +129,10 @@ let lookup_pop (n : int) (env : env) =
   let rels = List.map (fun i -> lookup_rel i env) (from_one_to n) in
   (pop_rel_context n env, rels)
 
+(* Return a list of all indexes in env, starting with 1 *)
+let all_rel_indexes (env : env) : int list =
+  from_one_to (nb_rel env)
+
 (* Push bindings for a fixpoint *)
 let bindings_for_fix (names : name array) (typs : types array) : CRD.t list =
   Array.to_list
@@ -133,24 +154,40 @@ let lookup_definition (env : env) (def : types) : types =
 
 (* 
  * Fully lookup a def in env which may be an alias
+ * If it's not a definition, return the original term
  * Don't fully delta-expand
  *)
-let unwrap_definition (env : env) (trm : types) : types =
-  let rec unwrap t =
-    try
-      unwrap (lookup_definition env t)
-    with _ ->
-      t
-  in unwrap (lookup_definition env trm)
-
-(* Get the name of a constant term *)
+let rec unwrap_definition (env : env) (trm : types) : types =
+  try
+    unwrap_definition env (lookup_definition env trm)
+  with _ ->
+    trm
+  
+(* Get the name of a term if it's constant, otherwise fail *)
 let name_of_const (trm : types) =
  match kind_of_term trm with
  | Const (c, u) ->
     let kn = Constant.canonical c in
     let (modpath, dirpath, label) = KerName.repr kn in
     Id.of_string_soft (Label.to_string label)
- | _ -> failwith "term must be a constant"
+ | _ ->
+    failwith "not a constant"
+
+(* Try to get a name, and if it fails, call the default *)
+let id_or_default (trm : types) get_id default =
+  try
+    get_id trm
+  with _ ->
+    default ()
+
+(* Add a suffix to a name ID *)
+let with_suffix (suffix : string) (id : Id.t) : Id.t =
+  Id.of_string (String.concat "_" [Id.to_string id; suffix])
+
+(* Get a fresh constant identifier with a prefix as an ID *)
+let fresh_with_prefix (prefix : string) () : Id.t =
+  let id_string = string_of_int (fid ()) in
+  with_suffix id_string (Id.of_string prefix)
                  
 (* Zoom all the way into a lambda term *)
 let rec zoom_lambda_term (env : env) (trm : types) : env * types =
@@ -430,7 +467,147 @@ let all_substs p env evd (src, dst) trm : types =
 (* In env, substitute all subterms of trm that are convertible to src with dst *)
 let all_conv_substs =
   all_substs convertible
-                
+
+(* --- Debugging terms and environments --- *)
+             
+(*
+ * Using pp, prints directly to a string
+ *)
+let print_to_string (pp : formatter -> 'a -> unit) (trm : 'a) : string =
+  Format.asprintf "%a" pp trm
+
+(* Gets n as a string *)
+let name_as_string (n : name) : string =
+  match n with
+  | Name id -> string_of_id id
+  | Anonymous -> "_"
+
+(* Pretty prints a term using Coq's pretty printer *)
+let print_constr (fmt : formatter) (c : constr) : unit  =
+  Pp.pp_with fmt (Printer.pr_constr c)
+
+(* Pretty prints a universe level *)
+let print_univ_level (fmt : formatter) (l : Level.t) =
+  Pp.pp_with fmt (Level.pr l)
+
+(* Prints a universe *)
+let universe_as_string u =
+  match Universe.level u with
+  | Some l -> print_to_string print_univ_level l
+  | None -> Printf.sprintf "Max{%s}" (String.concat ", " (List.map (print_to_string print_univ_level) (LSet.elements (Universe.levels u))))
+
+(* Gets a sort as a string *)
+let sort_as_string s =
+  match s with
+  | Prop _ -> if s = prop_sort then "Prop" else "Set"
+  | Type u -> Printf.sprintf "Type %s" (universe_as_string u)
+
+(* Prints a term *)
+let rec term_as_string (env : env) (trm : types) =
+  match kind_of_term trm with
+  | Rel i ->
+     (try
+       let (n, _, _) = CRD.to_tuple @@ lookup_rel i env in
+       Printf.sprintf "(%s [Rel %d])" (name_as_string n) i
+     with
+       Not_found -> Printf.sprintf "(Unbound_Rel %d)" i)
+  | Var v ->
+     string_of_id v
+  | Meta mv ->
+     failwith "Metavariables are not yet supported"
+  | Evar (k, cs) ->
+     Printf.sprintf "??"
+  | Sort s ->
+     sort_as_string s
+  | Cast (c, k, t) ->
+     Printf.sprintf "(%s : %s)" (term_as_string env c) (term_as_string env t)
+  | Prod (n, t, b) ->
+     Printf.sprintf "(Π (%s : %s) . %s)" (name_as_string n) (term_as_string env t) (term_as_string (push_rel CRD.(LocalAssum(n, t)) env) b)
+  | Lambda (n, t, b) ->
+     Printf.sprintf "(λ (%s : %s) . %s)" (name_as_string n) (term_as_string env t) (term_as_string (push_rel CRD.(LocalAssum(n, t)) env) b)
+  | LetIn (n, trm, typ, e) ->
+     Printf.sprintf "(let (%s : %s) := %s in %s)" (name_as_string n) (term_as_string env typ) (term_as_string env typ) (term_as_string (push_rel CRD.(LocalDef(n, e, typ)) env) e)
+  | App (f, xs) ->
+     Printf.sprintf "(%s %s)" (term_as_string env f) (String.concat " " (List.map (term_as_string env) (Array.to_list xs)))
+  | Const (c, u) ->
+     let ker_name = Constant.canonical c in
+     string_of_kn ker_name
+  | Construct (((i, i_index), c_index), u) ->
+     let mutind_body = lookup_mind i env in
+     let ind_body = mutind_body.mind_packets.(i_index) in
+     let constr_name_id = ind_body.mind_consnames.(c_index - 1) in
+     string_of_id constr_name_id
+  | Ind ((i, i_index), u) ->
+     let mutind_body = lookup_mind i env in
+     let ind_bodies = mutind_body.mind_packets in
+     let name_id = (ind_bodies.(i_index)).mind_typename in
+     string_of_id name_id
+  | Case (ci, ct, m, bs) ->
+     let (i, i_index) = ci.ci_ind in
+     let mutind_body = lookup_mind i env in
+     let ind_body = mutind_body.mind_packets.(i_index) in
+     Printf.sprintf
+       "(match %s : %s with %s)"
+       (term_as_string env m)
+       (term_as_string env ct)
+       (String.concat
+          " "
+          (Array.to_list
+             (Array.mapi
+                (fun c_i b ->
+                  Printf.sprintf
+                    "(case %s => %s)"
+                    (string_of_id (ind_body.mind_consnames.(c_i)))
+                    (term_as_string env b))
+                bs)))
+  | Fix ((is, i), (ns, ts, ds)) ->
+     let env_fix = push_rel_context (bindings_for_fix ns ds) env in
+     String.concat
+       " with "
+       (map3
+          (fun n t d ->
+            Printf.sprintf
+             "(Fix %s : %s := %s)"
+             (name_as_string n)
+             (term_as_string env t)
+             (term_as_string env_fix d))
+          (Array.to_list ns)
+          (Array.to_list ts)
+          (Array.to_list ds))
+  | CoFix (i, (ns, ts, ds)) ->
+     Printf.sprintf "TODO" (* TODO *)
+  | Proj (p, c) ->
+     Printf.sprintf "TODO" (* TODO *)
+
+(* --- Coq environments --- *)
+
+(* Gets env as a string *)
+let env_as_string (env : env) : string =
+  let all_relis = all_rel_indexes env in
+  String.concat
+    ",\n"
+    (List.map
+       (fun i ->
+         let (n, b, t) = CRD.to_tuple @@ lookup_rel i env in
+         Printf.sprintf "%s (Rel %d): %s" (name_as_string n) i (term_as_string (pop_rel_context i env) t))
+       all_relis)
+
+(* Print a separator string *)
+let print_separator unit : unit =
+  Printf.printf "%s\n\n" "-----------------"
+
+(* Debug a term *)
+let debug_term (env : env) (trm : types) (descriptor : string) : unit =
+  Printf.printf "%s: %s\n\n" descriptor (term_as_string env trm)
+
+(* Debug a list of terms *)
+let debug_terms (env : env) (trms : types list) (descriptor : string) : unit =
+  List.iter (fun t -> debug_term env t descriptor) trms
+
+(* Debug an environment *)
+let debug_env (env : env) (descriptor : string) : unit =
+  Printf.printf "%s: %s\n\n" descriptor (env_as_string env)
+             
 (* --- Sectumsempra --- *)
 
 (*
@@ -663,6 +840,63 @@ let invert_body_in n env evd trm =
   else
     failwith "Could not flip the body upside-down; are you sure this is a human?"
 
+(* --- Reducio --- *)
+
+(*
+ * The Reducio spell reduces the target back to its normal size.
+ * Please do not use this on humans unless they are impacted by Engorgio.
+ *
+ * This is a simple version of Reducio.
+ * More complex versions are left to the witch or wizard.
+ *)
+
+(*
+ * Check if two consecutive factors are inverses
+ *)
+let are_inverses (evd : evar_map) (env', trm') (env, trm) : bool =
+  try
+    let (_, t, b) = destProd (reduce_type env evd trm) in
+    let (_, t', b') = destProd (reduce_type env' evd trm') in
+    convertible env evd t (unshift b') && convertible env' evd (unshift b) t'
+  with _ ->
+    false
+
+(*
+ * Filter out every pair of consecutive inverses
+ *)
+let rec filter_inverses (evd : evar_map) (fs : factors) =
+  match fs with
+  | f' :: (f :: tl) ->
+     if are_inverses evd f' f then
+       filter_inverses evd tl
+     else
+       f' :: (filter_inverses evd (f :: tl))
+  | _ ->
+     fs
+
+(*
+ * Like Levicorpus, the foundations of Reducio are grounded in Sectumsempra.
+ * Reducio first slices the target into pieces, then looks for redundant pieces
+ * to get rid of, then reconstructs the target. When it fails,
+ * it simply produces the original term.
+ *
+ * Note: This is precisely why it can be dangerous to use on humans if they 
+ * have not been engorged first, since they will not have any redundant 
+ * pieces to get rid of.
+ *
+ * In this simple version, two pieces are redundant exactly when one
+ * has the inverse type of the other, and the spell only gets rid
+ * of consecutive redundant pieces.
+ *)
+let reduce_body (env : env) (evd : evar_map) (trm : types) : types =
+  let fs = List.rev (factor_term env evd trm) in
+  let red_fs = List.hd fs :: (filter_inverses evd (List.tl fs)) in
+  let red = apply_factors red_fs in
+  if has_type env evd (infer_type env evd trm) red then
+    reduce_term env evd red
+  else
+    trm
+
 (* --- Spell top-levels --- *)
 
 let geminio_in (trm : types) : unit Proofview.tactic =
@@ -672,16 +906,14 @@ let geminio_in (trm : types) : unit Proofview.tactic =
 let sectumsempra target : unit =
   let (evd, env) = Lemmas.get_current_context () in
   let trm = intern env evd target in
-  let id = name_of_const trm in
-  let prefix = Id.to_string id in
+  let id = id_or_default trm name_of_const (fresh_with_prefix "factor") in
   let body = unwrap_definition env trm in
   let fs = reconstruct_factors (factor_term env evd body) in
   List.iteri
     (fun i lemma ->
-      let lemma_id_string = String.concat "_" [prefix; string_of_int i] in
-      let lemma_id = Id.of_string lemma_id_string in
+      let lemma_id = with_suffix (string_of_int i) id in
       define_term lemma_id env evd lemma;
-      Printf.printf "Defined %s\n" lemma_id_string)
+      Printf.printf "Defined %s\n" (Id.to_string lemma_id))
     fs
 
 let levicorpus_in (trm : types) : unit Proofview.tactic =
@@ -692,13 +924,20 @@ let levicorpus_in (trm : types) : unit Proofview.tactic =
 let levicorpus target : unit =
   let (evd, env) = Lemmas.get_current_context () in
   let trm = intern env evd target in
-  let id = name_of_const trm in
-  let prefix = Id.to_string id in
-  let inv_n_string = String.concat "_" [prefix; "inv"] in
-  let inv_id = Id.of_string inv_n_string in
+  let name_of_inv t = with_suffix "inv" (name_of_const t) in
+  let inv_id = id_or_default trm name_of_inv (fresh_with_prefix "inverse") in
+  invert_body inv_id env evd (unwrap_definition env trm)
+
+let reducio target : unit =
+  let (evd, env) = Lemmas.get_current_context () in
+  let trm = intern env evd target in
+  let name_of_red t = with_suffix "red" (name_of_const t) in
+  let red_id = id_or_default trm name_of_red (fresh_with_prefix "reduced") in
   let body = unwrap_definition env trm in
-  invert_body inv_id env evd body
-                        
+  let red = reduce_body env evd body in
+  define_term red_id env evd red;
+  Printf.printf "Defined %s\n" (Id.to_string red_id)
+                
 (* --- Spells --- *)
 
 (*
@@ -734,4 +973,12 @@ END
 TACTIC EXTEND levicorpus
 | [ "levicorpus" constr(target) ] ->
   [ levicorpus_in target ]
+END
+
+(* 
+ * Reduces the target to its normal size.
+ *)
+VERNAC COMMAND EXTEND Reducio CLASSIFIED AS SIDEFF
+| [ "Reducio" constr(target) ] ->
+  [ reducio target ]
 END

@@ -49,6 +49,25 @@ Proof.
   exact lt_S_m_p_inv.
 Qed.
 
+(* --- Reducio --- *)
+
+Theorem engorged:
+  forall (a b : nat),
+    a <= b ->
+    a <= S b.
+Proof.
+  intros. rewrite plus_n_O. rewrite plus_comm.
+  constructor. auto.
+Qed.
+
+Reducio engorged.
+
+Theorem found_minimal_app:
+  engorged_red = le_S.
+Proof.
+  reflexivity.
+Qed.
+
 (* --- Spells in combination --- *)
 
 Theorem lt_S_m_p_iff:
