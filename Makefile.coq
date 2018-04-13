@@ -196,7 +196,8 @@ endif
 
 .SECONDARY: $(addsuffix .d,$(ML4FILES))
 
-MLFILES:=src/lib/collections.ml
+MLFILES:=src/lib/collections.ml\
+  src/lib/basics.ml
 
 ifneq ($(filter-out archclean clean cleanall printenv,$(MAKECMDGOALS)),)
 -include $(addsuffix .d,$(MLFILES))
@@ -220,7 +221,8 @@ endif
 
 .SECONDARY: $(addsuffix .d,$(MLPACKFILES))
 
-MLIFILES:=src/lib/collections.mli
+MLIFILES:=src/lib/collections.mli\
+  src/lib/basics.mli
 
 ifneq ($(filter-out archclean clean cleanall printenv,$(MAKECMDGOALS)),)
 -include $(addsuffix .d,$(MLIFILES))

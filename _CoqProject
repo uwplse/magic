@@ -5,6 +5,9 @@
 src/lib/collections.mli
 src/lib/collections.ml
 
+src/lib/basics.mli
+src/lib/basics.ml
+
 src/magic.ml4
 src/wand.mlpack
 
