@@ -1,5 +1,9 @@
+-I src/lib
 -I src
 -Q theories Magic
+
+src/lib/collections.mli
+src/lib/collections.ml
 
 src/magic.ml4
 src/wand.mlpack

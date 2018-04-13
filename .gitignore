@@ -10,3 +10,6 @@
 *.glob
 *.v.d
 *.vo
+*.ml.d
+*.mli.d
+*~
