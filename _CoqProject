@@ -1,4 +1,5 @@
 -I src/lib
+-I src/spells
 -I src
 -Q theories Magic
 
@@ -19,6 +20,9 @@ src/lib/debruijn.mli
 src/lib/debruijn.ml
 src/lib/substitution.mli
 src/lib/substitution.ml
+
+src/spells/sectumsempra.ml
+src/spells/sectumsempra.mli
 
 src/magic.ml4
 src/wand.mlpack
