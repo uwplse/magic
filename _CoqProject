@@ -1,0 +1,7 @@
+-I src
+-Q theories Magic
+
+src/magic.ml4
+src/wand.mlpack
+
+theories/Wand.v
