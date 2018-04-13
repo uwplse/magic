@@ -12,14 +12,11 @@
 open Term
 open Names
 open Environ
-open Constrarg
 open Evd
-open Tactics
 open Collections
 open Basics
 open Coqterms
 open Debruijn
-open Substitution
 open Printing (* useful for debugging *)
 
 module CRD = Context.Rel.Declaration

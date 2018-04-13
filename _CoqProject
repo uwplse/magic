@@ -21,8 +21,10 @@ src/lib/debruijn.ml
 src/lib/substitution.mli
 src/lib/substitution.ml
 
-src/spells/sectumsempra.ml
 src/spells/sectumsempra.mli
+src/spells/sectumsempra.ml
+src/spells/levicorpus.mli
+src/spells/levicorpus.ml
 
 src/magic.ml4
 src/wand.mlpack

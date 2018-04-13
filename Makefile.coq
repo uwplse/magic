@@ -205,7 +205,8 @@ MLFILES:=src/lib/collections.ml\
   src/lib/hofs.ml\
   src/lib/debruijn.ml\
   src/lib/substitution.ml\
-  src/spells/sectumsempra.ml
+  src/spells/sectumsempra.ml\
+  src/spells/levicorpus.ml
 
 ifneq ($(filter-out archclean clean cleanall printenv,$(MAKECMDGOALS)),)
 -include $(addsuffix .d,$(MLFILES))
@@ -236,7 +237,8 @@ MLIFILES:=src/lib/collections.mli\
   src/lib/hofs.mli\
   src/lib/debruijn.mli\
   src/lib/substitution.mli\
-  src/spells/sectumsempra.mli
+  src/spells/sectumsempra.mli\
+  src/spells/levicorpus.mli
 
 ifneq ($(filter-out archclean clean cleanall printenv,$(MAKECMDGOALS)),)
 -include $(addsuffix .d,$(MLIFILES))

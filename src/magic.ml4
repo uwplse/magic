@@ -17,120 +17,12 @@ open Printing (* useful for debugging *)
 (* --- Spells --- *)
 
 (*
- * These modules contain the magic behind each of these spells.
+ * These modules contain the magic behind the non-trivial spells.
  * You should inspect and modify these as needed.
  *)
        
 open Sectumsempra
-
-(* --- Levicorpus --- *)
-
-(*
- * What the Levicorpus spell shows is that benign and
- * useful magic can sometimes be built on dark magic.
- * 
- * While Sectumsempra alone is a dark spell, Levicorpus,
- * a much more innocent spell that simply flips bodies upside-down,
- * is built on the foundations of Sectumsempra (Snape's prior work): It would be too
- * difficult to simply flip a complex body upside-down, so instead,
- * the spell works by getting all of the parts, flipping each part upside-down, 
- * and then reconstructing those parts in the opposite order.
- *
- * It is painless for the target, who never notices being deconstructed to begin with.
- * 
- * This is also a simplified version; consult me for details on how to handle 
- * other kinds of bodies, or see the PUMPKIN PATCH paper.
- *)
-
-(* 
- * Invert rewrites by exploiting symmetry of equality.
- * Simplified inversion for this toy plugin only handles sequences of rewrites. 
- *)
-let invert_rewrite (env : env) (evd : evar_map) (trm : types) : (env * types) option =
-  let trm = reduce_term env evd trm in
-  match kind_of_term trm with
-  | Lambda (n, t, b) ->
-     let env_b = push_local (n, t) env in
-     let t' = unshift (reduce_term env_b evd (infer_type env_b evd b)) in
-     let trm' = all_conv_substs env evd (t, t') trm in
-     let goal_type = mkProd (n, t', t) in
-     let (n, t', b') = destLambda trm' in
-     if isApp b' && is_rewrite (fst (destApp b')) then
-       let (f, args) = destApp b' in
-       let i_eq = Array.length args - 1 in
-       let eq = args.(i_eq) in
-       let eq_type = infer_type env evd eq in
-       let eq_typ_args = Array.to_list (snd (destApp eq_type)) in
-       let eq_args = List.append eq_typ_args [eq] in
-       let eq_r = mkApp (eq_sym, Array.of_list eq_args) in
-       let i_src = 1 in
-       let i_dst = 4 in
-       let args_r =
-         Array.mapi
-	   (fun i a ->
-	     if i = i_eq then
-	       eq_r
-	     else if i = i_src then
-	       args.(i_dst)
-	     else if i = i_dst then
-	       args.(i_src)
-	     else
-	       a)
-	   args
-       in Some (env, mkLambda (n, t', mkApp (f, args_r)))
-     else
-       None
-  | _ ->
-     Some (env, trm)
-          
-                        
-(*
- * Given the factors for a term and an inverter,
- * invert every factor, and produce the inverse factors by reversing it.
- *
- * That is, take [X; X -> Y; Y -> Z] and produce [Z; Z -> Y; Y -> X].
- *
- * If inverting any term along the way fails, produce the empty list.
- *
- * For simplicity, we assume a sequence of rewrites for this example plugin.
- *)
-let invert_factors (evd : evar_map) (fs : factors) : factors =
-  let inverse_options = List.map (fun (en, f) -> invert_rewrite en evd f) fs in
-  let inverted = List.rev (get_all_or_none inverse_options) in
-  match inverted with (* swap final hypothesis *)
-  | (env_inv, trm_inv) :: t when List.length t > 0 ->
-     let (n, h_inv, _) = destLambda (snd (last t)) in
-     let env_inv = push_rel CRD.(LocalAssum(n, h_inv)) (pop_rel_context 1 env_inv) in
-     (env_inv, trm_inv) :: t
-  | _ ->
-     inverted
-                        
-(* Invert a body in an environment *)
-let invert (env : env) (evd : evar_map) (trm : types) : types option =
-  let inv_fs = invert_factors evd (factor_term env evd trm) in
-  if List.length inv_fs > 0 then
-    Some (apply_factors inv_fs)
-  else
-    None
-
-(* Invert a body and define the result *)
-let invert_body n env evd trm =
-  let inverted = invert env evd trm in
-  if Option.has_some inverted then
-    let flipped = Option.get inverted in
-    define_term n env evd flipped;
-    Printf.printf "Defined %s\n" (Id.to_string n)
-  else
-    failwith "Could not flip the body upside-down; are you sure this is a human?"
-
-(* Tactic version *)
-let invert_body_in n env evd trm =
-  let inverted = invert env evd trm in
-  if Option.has_some inverted then
-    let flipped = Option.get inverted in
-    letin_pat_tac None n ((evd, evd), flipped) Locusops.nowhere
-  else
-    failwith "Could not flip the body upside-down; are you sure this is a human?"
+open Levicorpus
 
 (* --- Reducio --- *)
 
@@ -191,10 +83,12 @@ let reduce_body (env : env) (evd : evar_map) (trm : types) : types =
 
 (* --- Spell top-levels --- *)
 
+(* Geminio *)
 let geminio_in (trm : types) : unit Proofview.tactic =
   let (evd, env) = Lemmas.get_current_context () in
   letin_pat_tac None Anonymous ((evd, evd), trm) Locusops.nowhere
-                    
+
+(* Sectumsempra *)
 let sectumsempra target : unit =
   let (evd, env) = Lemmas.get_current_context () in
   let trm = intern env evd target in
@@ -208,18 +102,36 @@ let sectumsempra target : unit =
       Printf.printf "Defined %s\n" (Id.to_string lemma_id))
     fs
 
+(* Common Levicorpus logic *)
+let levicorpus_common env evd trm define =
+  let inverted = levicorpus_body env evd trm in
+  if Option.has_some inverted then
+    let flipped = Option.get inverted in
+    define env evd flipped
+  else
+    failwith "Could not flip the body upside-down; are you sure this is a human?"
+
+(* Tactic version of Levicorpus *)
 let levicorpus_in (trm : types) : unit Proofview.tactic =
   let (evd, env) = Lemmas.get_current_context () in
   let body = unwrap_definition env trm in
-  invert_body_in Anonymous env evd body
-    
+  let define env evd trm =
+    letin_pat_tac None Anonymous ((evd, evd), trm) Locusops.nowhere
+  in levicorpus_common env evd body define
+
+(* Command version of Levicorpus *)
 let levicorpus target : unit =
   let (evd, env) = Lemmas.get_current_context () in
   let trm = intern env evd target in
   let name_of_inv t = with_suffix "inv" (name_of_const t) in
   let inv_id = id_or_default trm name_of_inv (fresh_with_prefix "inverse") in
-  invert_body inv_id env evd (unwrap_definition env trm)
+  let body = unwrap_definition env trm in
+  let define env evd trm =
+    define_term inv_id env evd trm;
+    Printf.printf "Defined %s\n" (Id.to_string inv_id)
+  in levicorpus_common env evd body define
 
+(* Reducio *)
 let reducio target : unit =
   let (evd, env) = Lemmas.get_current_context () in
   let trm = intern env evd target in
