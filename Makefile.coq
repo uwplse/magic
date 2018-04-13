@@ -199,7 +199,8 @@ endif
 MLFILES:=src/lib/collections.ml\
   src/lib/basics.ml\
   src/lib/coqterms.ml\
-  src/lib/hofs.ml
+  src/lib/hofs.ml\
+  src/lib/debruijn.ml
 
 ifneq ($(filter-out archclean clean cleanall printenv,$(MAKECMDGOALS)),)
 -include $(addsuffix .d,$(MLFILES))
@@ -226,7 +227,8 @@ endif
 MLIFILES:=src/lib/collections.mli\
   src/lib/basics.mli\
   src/lib/coqterms.mli\
-  src/lib/hofs.mli
+  src/lib/hofs.mli\
+  src/lib/debruijn.mli
 
 ifneq ($(filter-out archclean clean cleanall printenv,$(MAKECMDGOALS)),)
 -include $(addsuffix .d,$(MLIFILES))
