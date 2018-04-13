@@ -4,21 +4,14 @@ open Term
 open Names
 open Environ
 open Constrarg
-open Format
-open Univ
-open Printer
-open Declarations
-open Command
 open Evd
 open Tactics
 open Collections
 open Basics
 open Coqterms
-open Hofs
 open Debruijn
 open Substitution
-open Printing
-(* TODO clean above *)
+open Printing (* useful for debugging *)
 
 module CRD = Context.Rel.Declaration
              
