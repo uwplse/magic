@@ -198,7 +198,8 @@ endif
 
 MLFILES:=src/lib/collections.ml\
   src/lib/basics.ml\
-  src/lib/coqterms.ml
+  src/lib/coqterms.ml\
+  src/lib/hofs.ml
 
 ifneq ($(filter-out archclean clean cleanall printenv,$(MAKECMDGOALS)),)
 -include $(addsuffix .d,$(MLFILES))
@@ -224,7 +225,8 @@ endif
 
 MLIFILES:=src/lib/collections.mli\
   src/lib/basics.mli\
-  src/lib/coqterms.mli
+  src/lib/coqterms.mli\
+  src/lib/hofs.mli
 
 ifneq ($(filter-out archclean clean cleanall printenv,$(MAKECMDGOALS)),)
 -include $(addsuffix .d,$(MLIFILES))

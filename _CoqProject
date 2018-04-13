@@ -9,6 +9,8 @@ src/lib/basics.mli
 src/lib/basics.ml
 src/lib/coqterms.mli
 src/lib/coqterms.ml
+src/lib/hofs.mli
+src/lib/hofs.ml
 
 src/magic.ml4
 src/wand.mlpack
