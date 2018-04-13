@@ -25,6 +25,8 @@ src/spells/sectumsempra.mli
 src/spells/sectumsempra.ml
 src/spells/levicorpus.mli
 src/spells/levicorpus.ml
+src/spells/reducio.mli
+src/spells/reducio.ml
 
 src/magic.ml4
 src/wand.mlpack
