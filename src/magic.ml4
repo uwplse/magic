@@ -22,12 +22,22 @@ open Levicorpus
 open Reducio
 
 (* --- Spell top-levels --- *)
-
-(* Geminio *)
+       
+(* Tactic version of Geminio *)
 let geminio_in (trm : types) : unit Proofview.tactic =
   let (evd, env) = Lemmas.get_current_context () in
   letin_pat_tac None Anonymous ((evd, evd), trm) Locusops.nowhere
 
+(*
+ * Exercise 1 [5 points]: Implement the command version of Geminio.
+ * To get the identifier for the cloned term, just add the suffix ',
+ * so f becomes f'. This is a nice way to get used to the infrastructure.
+ * 
+ * If successful, Geminio.v should compile.
+ *)
+let geminio target : unit =
+  () (* Your code here *)
+                
 (* Sectumsempra *)
 let sectumsempra target : unit =
   let (evd, env) = Lemmas.get_current_context () in
@@ -91,6 +101,14 @@ TACTIC EXTEND geminio
 | [ "geminio" constr(target) ] ->
   [ geminio_in target ]
 END
+
+(*
+ * Command version of Geminio (left to the wizard).
+ *)
+VERNAC COMMAND EXTEND Geminio CLASSIFIED AS SIDEFF
+| [ "Geminio" constr(target) ] ->
+  [ geminio target  ]
+END    
               
 (* 
  * Slices the body of the target. 
