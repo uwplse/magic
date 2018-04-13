@@ -1,6 +1,15 @@
 Require Import Arith NPeano.
 Require Import Magic.Wand.
 
+(* --- Geminio --- *)
+
+Theorem obvious:
+  forall n : nat,
+    (nat * nat).
+Proof.
+  intros. geminio n. apply (n, n0).
+Qed.
+
 (* --- Sectumsempra --- *)
 
 Theorem lt_S_m_p:
@@ -39,3 +48,5 @@ Theorem test_lt_S_m_p_inv:
 Proof.
   exact lt_S_m_p_inv.
 Qed.
+
+(* --- Spells in combination --- *)

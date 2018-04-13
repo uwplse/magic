@@ -10,6 +10,7 @@ open Printer
 open Declarations
 open Command
 open Evd
+open Tactics
 
 module CRD = Context.Rel.Declaration
 
@@ -653,8 +654,12 @@ let invert_body n env evd trm =
   else
     failwith "Could not flip the body upside-down; are you sure this is a human?"
 
-(* --- Command top-levels --- *)
+(* --- Spell top-levels --- *)
 
+let geminio (trm : types) =
+  let (evd, env) = Lemmas.get_current_context() in
+  letin_pat_tac None Anonymous ((evd, evd), trm) Locusops.nowhere
+                    
 let sectumsempra target : unit =
   let (evd, env) = Lemmas.get_current_context () in
   let trm = intern env evd target in
@@ -682,6 +687,14 @@ let levicorpus target : unit =
                         
 (* --- Spells --- *)
 
+(*
+ * Simply duplicates a term in the context.
+ *)
+TACTIC EXTEND geminio
+| [ "geminio" constr(target) ] ->
+  [ geminio target ]
+END
+              
 (* 
  * Slices the body of the target. 
  * For more details, see Snape (1971).
@@ -699,4 +712,5 @@ END
 VERNAC COMMAND EXTEND InvertCandidate CLASSIFIED AS SIDEFF
 | [ "Levicorpus" constr(target) ] ->
   [ levicorpus target ]
-END
+    END
+
