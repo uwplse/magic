@@ -28,3 +28,14 @@ Theorem test_lt_S_m_p_1:
 Proof.
   exact lt_S_m_p_1.
 Qed.
+
+(* --- Levicorpus --- *)
+
+Levicorpus lt_S_m_p.
+
+Theorem test_lt_S_m_p_inv:
+  forall n m p : nat, 
+    n < S (p + m) -> n < m + S p.
+Proof.
+  exact lt_S_m_p_inv.
+Qed.

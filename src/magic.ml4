@@ -26,6 +26,19 @@ let rec range (min : int) (max : int) : int list =
 let from_one_to (max : int) : int list =
   range 1 (max + 1)
 
+(*
+ * Get values from a list of optionals only if every optional is some
+ * Otherwise, return the empty list
+ *)
+let get_all_or_none (l : 'a option list) : 'a list =
+  if List.for_all Option.has_some l then
+    List.map Option.get l
+  else
+    []
+
+(* Gets the last element of l *)
+let last (l : 'a list) = List.hd (List.rev l)
+
 (* --- Plugin basics --- *)
 
 (*
@@ -64,6 +77,20 @@ let convertible = Reductionops.is_conv
 (* Infer a type (can cause universe leaks, but inconsequential for magic lesson) *)
 let infer_type (env : env) (evd : evar_map) (trm : types) : types =
   Typing.unsafe_type_of env evd trm
+
+(* Check whether a term has a given type *)
+let has_type (env : env) (evd : evar_map) (typ : types) (trm : types) : bool =
+  try
+    let trm_typ = infer_type env evd trm in
+    convertible env evd trm_typ typ
+  with _ -> false
+                        
+(* Filter trms to those that have type typ in env *)
+let filter_by_type (env : env) (evd : evar_map) (typ : types) (trms : types list) : types list =
+  try
+    List.filter (has_type env evd typ) trms
+  with _ ->
+    []
                     
 (* Default reducer *)
 let reduce_term (env : env) (evd : evar_map) (trm : types) : types =
@@ -145,6 +172,64 @@ let rec reconstruct_lambda_n (env : env) (b : types) (i : int) : types =
 let reconstruct_lambda (env : env) (b : types) : types =
   reconstruct_lambda_n env b 0
 
+(* --- Useful constants --- *)
+
+(*
+ * This is not a good way to construct constants. Don't copy it.
+ * See recent coq-club email on this topic.
+ *)
+
+(* eq_ind_r *)
+let eq_ind_r : types =
+  mkConst
+    (Constant.make2
+       (ModPath.MPfile
+          (DirPath.make (List.map Id.of_string ["Logic"; "Init"; "Coq"])))
+       (Label.make "eq_ind_r"))
+
+(* eq_ind *)
+let eq_ind : types =
+  mkConst
+    (Constant.make2
+       (ModPath.MPfile
+          (DirPath.make (List.map Id.of_string ["Logic"; "Init"; "Coq"])))
+       (Label.make "eq_ind"))
+
+(* eq_rec_r *)
+let eq_rec_r : types =
+  mkConst
+    (Constant.make2
+       (ModPath.MPfile
+          (DirPath.make (List.map Id.of_string ["Logic"; "Init"; "Coq"])))
+       (Label.make "eq_rec_r"))
+
+(* eq_rec *)
+let eq_rec : types =
+  mkConst
+    (Constant.make2
+       (ModPath.MPfile
+          (DirPath.make (List.map Id.of_string ["Logic"; "Init"; "Coq"])))
+       (Label.make "eq_rec"))
+
+(* eq_sym *)
+let eq_sym : types =
+  mkConst
+    (Constant.make2
+       (ModPath.MPfile
+          (DirPath.make (List.map Id.of_string ["Logic"; "Init"; "Coq"])))
+       (Label.make "eq_sym"))
+                       
+(*
+ * Check if a term is a rewrite via eq_ind or eq_ind_r
+ * For efficiency, just check eq_constr
+ * Don't consider convertible terms for now
+ *)
+let is_rewrite (trm : types) : bool =
+  eq_constr trm eq_ind_r ||
+  eq_constr trm eq_ind ||
+  eq_constr trm eq_rec_r ||
+  eq_constr trm eq_rec
+
 (* --- Higher-order functions on terms --- *)
 
 (* Recurse on a mapping function with an environment for a fixpoint *)
@@ -203,6 +288,60 @@ let rec map_term_env f d (env : env) (a : 'a) (trm : types) : types =
      mkProj (p, c')
   | _ ->
      f env a trm
+
+(*
+ * Map a function over a term in an environment
+ * Only apply the function when a proposition is true
+ * Apply the function eagerly
+ * Update the environment as you go
+ * Update the argument of type 'a using the a supplied update function
+ * Return a new term
+ *)
+let rec map_term_env_if p f d (env : env) (a : 'a) (trm : types) : types =
+  let map_rec = map_term_env_if p f d in
+  if p env a trm then
+    f env a trm
+  else
+    match kind_of_term trm with
+    | Cast (c, k, t) ->
+       let c' = map_rec env a c in
+       let t' = map_rec env a t in
+       mkCast (c', k, t')
+    | Prod (n, t, b) ->
+       let t' = map_rec env a t in
+       let b' = map_rec (push_rel CRD.(LocalAssum(n, t')) env) (d a) b in
+       mkProd (n, t', b')
+    | Lambda (n, t, b) ->
+       let t' = map_rec env a t in
+       let b' = map_rec (push_rel CRD.(LocalAssum(n, t')) env) (d a) b in
+       mkLambda (n, t', b')
+    | LetIn (n, trm, typ, e) ->
+       let trm' = map_rec env a trm in
+       let typ' = map_rec env a typ in
+       let e' = map_rec (push_rel CRD.(LocalDef(n, e, typ')) env) (d a) e in
+       mkLetIn (n, trm', typ', e')
+    | App (fu, args) ->
+       let fu' = map_rec env a fu in
+       let args' = Array.map (map_rec env a) args in
+       mkApp (fu', args')
+    | Case (ci, ct, m, bs) ->
+       let ct' = map_rec env a ct in
+       let m' = map_rec env a m in
+       let bs' = Array.map (map_rec env a) bs in
+       mkCase (ci, ct', m', bs')
+    | Fix ((is, i), (ns, ts, ds)) ->
+       let ts' = Array.map (map_rec env a) ts in
+       let ds' = Array.map (map_rec_env_fix map_rec d env a ns ts) ds in
+       mkFix ((is, i), (ns, ts', ds'))
+    | CoFix (i, (ns, ts, ds)) ->
+       let ts' = Array.map (map_rec env a) ts in
+       let ds' = Array.map (map_rec_env_fix map_rec d env a ns ts) ds in
+       mkCoFix (i, (ns, ts', ds'))
+    | Proj (pr, c) ->
+       let c' = map_rec env a c in
+       mkProj (pr, c')
+    | _ ->
+       trm
 
 (* --- The ugliest part of magic, DeBruijn indices --- *)
 
@@ -274,17 +413,30 @@ let shift (t : types) : types  =
 (* Decrement the relative indexes of a term t by one *)
 let unshift (t : types) : types =
   unshift_by 1 t
+
+(* --- Higher substitutions --- *)
+
+(* Map a substitution over a term *)
+let all_substs p env evd (src, dst) trm : types =
+  map_term_env_if
+    (fun en (s, _) t -> p en evd s t)
+    (fun _ (_, d) _ -> d)
+    (fun (s, d) -> (shift s, shift d))
+    env
+    (src, dst)
+    trm
+       
+(* In env, substitute all subterms of trm that are convertible to src with dst *)
+let all_conv_substs =
+  all_substs convertible
                 
-(* --- Sectumsempra logic --- *)
+(* --- Sectumsempra --- *)
 
 (*
  * This is the implementation of the simplest existing version of the sectumsempra 
- * (factoring) spell, which cuts a proof term into pieces.
- * The simple version doesn't handle terms with dependent types like A -> B -> C B,
- * which assumes a linear path, and which assumes the assumption is the 
- * last argument to the function. It also assumes a certain kind of term,
- * and doesn't handle some more complex terms.
+ * spell, which cuts a body into pieces.
  *
+ * This simple exemplary version makes a lot of assumptions about the body.
  * More general versions of this exist; if you are interested, let me know.
  *) 
                
@@ -401,14 +553,113 @@ let apply_factors (fs : factors) : types =
       base
   in reconstruct_lambda env body
 
+(* --- Levicorpus --- *)
+
+(*
+ * What the Levicorpus spell shows is that benign and
+ * useful magic can sometimes be built on dark magic.
+ * 
+ * While Sectumsempra alone is a dark spell, Levicorpus,
+ * a much more innocent spell that simply flips bodies upside-down,
+ * is built on the foundations of Sectumsempra (Snape's prior work): It would be too
+ * difficult to simply flip a complex body upside-down, so instead,
+ * the spell works by getting all of the parts, flipping each part upside-down, 
+ * and then reconstructing those parts in the opposite order.
+ *
+ * It is painless for the target, who never notices being deconstructed to begin with.
+ * 
+ * This is also a simplified version; consult me for details on how to handle 
+ * other kinds of bodies, or see the PUMPKIN PATCH paper.
+ *)
+
+(* 
+ * Invert rewrites by exploiting symmetry of equality.
+ * Simplified inversion for this toy plugin only handles sequences of rewrites. 
+ *)
+let invert_rewrite (env : env) (evd : evar_map) (trm : types) : (env * types) option =
+  let trm = reduce_term env evd trm in
+  match kind_of_term trm with
+  | Lambda (n, t, b) ->
+     let env_b = push_local (n, t) env in
+     let t' = unshift (reduce_term env_b evd (infer_type env_b evd b)) in
+     let trm' = all_conv_substs env evd (t, t') trm in
+     let goal_type = mkProd (n, t', t) in
+     let (n, t', b') = destLambda trm' in
+     if isApp b' && is_rewrite (fst (destApp b')) then
+       let (f, args) = destApp b' in
+       let i_eq = Array.length args - 1 in
+       let eq = args.(i_eq) in
+       let eq_type = infer_type env evd eq in
+       let eq_typ_args = Array.to_list (snd (destApp eq_type)) in
+       let eq_args = List.append eq_typ_args [eq] in
+       let eq_r = mkApp (eq_sym, Array.of_list eq_args) in
+       let i_src = 1 in
+       let i_dst = 4 in
+       let args_r =
+         Array.mapi
+	   (fun i a ->
+	     if i = i_eq then
+	       eq_r
+	     else if i = i_src then
+	       args.(i_dst)
+	     else if i = i_dst then
+	       args.(i_src)
+	     else
+	       a)
+	   args
+       in Some (env, mkLambda (n, t', mkApp (f, args_r)))
+     else
+       None
+  | _ ->
+     Some (env, trm)
+          
+                        
+(*
+ * Given the factors for a term and an inverter,
+ * invert every factor, and produce the inverse factors by reversing it.
+ *
+ * That is, take [X; X -> Y; Y -> Z] and produce [Z; Z -> Y; Y -> X].
+ *
+ * If inverting any term along the way fails, produce the empty list.
+ *
+ * For simplicity, we assume a sequence of rewrites for this example plugin.
+ *)
+let invert_factors (evd : evar_map) (fs : factors) : factors =
+  let inverse_options = List.map (fun (en, f) -> invert_rewrite en evd f) fs in
+  let inverted = List.rev (get_all_or_none inverse_options) in
+  match inverted with (* swap final hypothesis *)
+  | (env_inv, trm_inv) :: t when List.length t > 0 ->
+     let (n, h_inv, _) = destLambda (snd (last t)) in
+     let env_inv = push_rel CRD.(LocalAssum(n, h_inv)) (pop_rel_context 1 env_inv) in
+     (env_inv, trm_inv) :: t
+  | _ ->
+     inverted
+                        
+(* Invert a body in an environment *)
+let invert (env : env) (evd : evar_map) (trm : types) : types option =
+  let inv_fs = invert_factors evd (factor_term env evd trm) in
+  if List.length inv_fs > 0 then
+    Some (apply_factors inv_fs)
+  else
+    None
+
+(* Invert a body and define the result *)
+let invert_body n env evd trm =
+  let inverted = invert env evd trm in
+  if Option.has_some inverted then
+    let flipped = Option.get inverted in
+    define_term n env evd flipped;
+    Printf.printf "Defined %s\n" (Id.to_string n)
+  else
+    failwith "Could not flip the body upside-down; are you sure this is a human?"
+
 (* --- Command top-levels --- *)
 
-(* Factor a term into a sequence of lemmas *)
-let sectumsempra trm_ext : unit =
+let sectumsempra target : unit =
   let (evd, env) = Lemmas.get_current_context () in
-  let trm = intern env evd trm_ext in
-  let name = name_of_const trm in
-  let prefix = Id.to_string name in
+  let trm = intern env evd target in
+  let id = name_of_const trm in
+  let prefix = Id.to_string id in
   let body = unwrap_definition env trm in
   let fs = reconstruct_factors (factor_term env evd body) in
   List.iteri
@@ -417,14 +668,35 @@ let sectumsempra trm_ext : unit =
       let lemma_id = Id.of_string lemma_id_string in
       define_term lemma_id env evd lemma;
       Printf.printf "Defined %s\n" lemma_id_string)
-    fs                  
+    fs
+
+let levicorpus target : unit =
+  let (evd, env) = Lemmas.get_current_context () in
+  let trm = intern env evd target in
+  let id = name_of_const trm in
+  let prefix = Id.to_string id in
+  let inv_n_string = String.concat "_" [prefix; "inv"] in
+  let inv_id = Id.of_string inv_n_string in
+  let body = unwrap_definition env trm in
+  invert_body inv_id env evd body
                         
-(* --- Commands --- *)
+(* --- Spells --- *)
 
 (* 
- * Slices a term into its parts. For more details, see Snape (1971).
+ * Slices the body of the target. 
+ * For more details, see Snape (1971).
  *)
 VERNAC COMMAND EXTEND Sectumsempra CLASSIFIED AS SIDEFF
-| [ "Sectumsempra" constr(trm) ] ->
-  [ sectumsempra trm ]
+| [ "Sectumsempra" constr(target) ] ->
+  [ sectumsempra target ]
+END
+
+(* 
+ * Flips the body of the target upside-down.
+ * This is the command version of the spell.
+ * For more details, see Snape (1975).
+ *)
+VERNAC COMMAND EXTEND InvertCandidate CLASSIFIED AS SIDEFF
+| [ "Levicorpus" constr(target) ] ->
+  [ levicorpus target ]
 END
