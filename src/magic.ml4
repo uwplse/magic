@@ -81,8 +81,9 @@ let sectumsempra target : unit =
 let sectumsempra_in trm : unit Proofview.tactic =
   Proofview.tclUNIT () (* Your code here *)
 
-(* Common Levicorpus logic *)
+(* Common code for Levicorpus *)
 let levicorpus_common env evd trm define =
+  (* Your extended code here *)
   let inverted = levicorpus_body env evd trm in
   if Option.has_some inverted then
     let flipped = Option.get inverted in
