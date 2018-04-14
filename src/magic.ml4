@@ -22,6 +22,11 @@ open Levicorpus
 open Reducio
 
 (* --- Spell top-levels --- *)
+
+(*
+ * Some of these are implemented, and some are left as exercises.
+ * Do the exercises in whichever order you please. 
+ *)
        
 (* Tactic version of Geminio *)
 let geminio_in (trm : types) : unit Proofview.tactic =
@@ -29,9 +34,20 @@ let geminio_in (trm : types) : unit Proofview.tactic =
   letin_pat_tac None Anonymous ((evd, evd), trm) Locusops.nowhere
 
 (*
- * Exercise 1 [5 points]: Implement the command version of Geminio.
- * To get the identifier for the cloned term, just add the suffix ',
- * so f becomes f'. This is a nice way to get used to the infrastructure.
+ * Exercise 1 [5 points]: Implement a command version of Geminio,
+ * which takes an expicit identifier n and defines it to refer 
+ * to the cloned term. This is a nice way to get used to the infrastructure.
+ * It should be about two lines of code.
+ *
+ * If successful, GeminioNamed.v should compile.
+ *)
+let geminio_named n target : unit =
+  () (* Your code here *)
+                
+(*
+ * Exercise 2 [5 points]: Implement a command version of Geminio
+ * that automatically determines the identifier name by adding the
+ * "_clone" suffix, so that f is cloned to f_clone.
  * 
  * If successful, Geminio.v should compile.
  *)
@@ -108,6 +124,8 @@ END
 VERNAC COMMAND EXTEND Geminio CLASSIFIED AS SIDEFF
 | [ "Geminio" constr(target) ] ->
   [ geminio target  ]
+| [ "Geminio" constr(target) "as" ident(n)] ->
+  [ geminio_named n target ]
 END    
               
 (* 

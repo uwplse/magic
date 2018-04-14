@@ -8,10 +8,10 @@ Require Import Magic.Wand.
 Definition f (x : nat) :=
   S (S x).
 
-Geminio f.
+Geminio f as g.
 
 Theorem test_geminio:
-  f = f'.
+  f = g.
 Proof.
   reflexivity.
 Qed.
