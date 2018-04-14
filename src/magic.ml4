@@ -26,6 +26,7 @@ open Reducio
 (*
  * Some of these are implemented, and some are left as exercises.
  * Do the exercises in whichever order you please. 
+ * Tests for these exercises are in the coq/exercises directory.
  *)
        
 (* Tactic version of Geminio *)
@@ -34,7 +35,7 @@ let geminio_in (trm : types) : unit Proofview.tactic =
   letin_pat_tac None Anonymous ((evd, evd), trm) Locusops.nowhere
 
 (*
- * Exercise 1 [5 points]: Implement a command version of Geminio,
+ * Exercise 1 [2 points]: Implement a command version of Geminio,
  * which takes an expicit identifier n and defines it to refer 
  * to the cloned term. This is a nice way to get used to the infrastructure.
  * It should be about two lines of code.
@@ -67,6 +68,18 @@ let sectumsempra target : unit =
       define_term lemma_id env evd lemma;
       Printf.printf "Defined %s\n" (Id.to_string lemma_id))
     fs
+
+(*
+ * Exercise 3 [10 points]: Implement a tactic version of Sectumsempra.
+ * 
+ * Hint: To form a name from an identifier, you can use the Name constructor.
+ * To string tactics together, see tclTHEN proofview.mli in the 
+ * Coq source code.
+ * 
+ * If successful, Sectumsempra.v should compile.
+ *)
+let sectumsempra_in trm : unit Proofview.tactic =
+  Proofview.tclUNIT () (* Your code here *)
 
 (* Common Levicorpus logic *)
 let levicorpus_common env evd trm define =
@@ -135,6 +148,14 @@ END
 VERNAC COMMAND EXTEND Sectumsempra CLASSIFIED AS SIDEFF
 | [ "Sectumsempra" constr(target) ] ->
   [ sectumsempra target ]
+END
+
+(* 
+ * Tactic version of the Sectumsempra spell.
+ *)
+TACTIC EXTEND sectumsempra
+| [ "sectumsempra" constr(target) ] ->
+  [ sectumsempra_in target ]
 END
 
 (* 
