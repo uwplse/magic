@@ -6,7 +6,7 @@ There are a number of example spells and some exercises to try out yourself.
 
 If you build on any of the commands or tactics here and then publish a paper, please cite the 
 [PUMPKIN PATCH](http://tlringer.github.io/pdf/pumpkinpaper.pdf) paper, since the interesting commands and tactics
-all build on the factoring component from that paper.
+all build on components from that paper.
 
 # Building
 
@@ -18,7 +18,7 @@ There are a number of toy example spells in [magic.ml4](/src/magic.ml4) for the 
 The test code for these examples is in [Examples.v](/coq/Examples.v). Since these are purely demonstrative,
 they are not guaranteed to work for code outside of these examples.
 
-Many of the examples are simple versions of functionality from [PUMPKIN PATCH](http://github.com/uwplse/PUMPKIN-PATCH).
+Many of the examples use simplified functionality from [PUMPKIN PATCH](http://github.com/uwplse/PUMPKIN-PATCH).
 If you are curious, the paper is [here](http://tlringer.github.io/pdf/pumpkinpaper.pdf).
 
 # Exercises
