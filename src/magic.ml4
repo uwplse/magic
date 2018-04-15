@@ -8,6 +8,7 @@ open Evd
 open Tactics
 open Basics
 open Coqterms
+open Substitution (* useful for later exercises *)
 open Printing (* useful for debugging *)
 
 (* --- Spells --- *)
@@ -185,6 +186,34 @@ let reducio_tria target : unit =
  *)
 let reducio_maxima target : unit =
   () (* Your code here *)
+
+(*
+ * Exercise 7 [10 points] The Relashio spell releases the target
+ * from a binding. Implement a simple version of Relashio
+ * that takes a constant c and abstracts all terms convertible with c
+ * in target at the highest level possible.
+ * So, for example, given the following two definitions:
+ *
+ * Definition bar (n : nat) := n + 0.
+ * Definition foo (n : nat) := n + (0 + 0).
+ *
+ * casting the following spells:
+ *
+ * Relashio 0 in foo.
+ * Relashio 0 in bar.
+ *
+ * should produce two terms foo_rel, bar_rel which both have the same body
+ * (the name of the released binding m is irrelevant):
+ *
+ * fun (m : nat) (n : nat) => n + m
+ *
+ * Hint: The all_conv_substs function from substitution.ml will do this
+ * substitution for you. This is all doable in about 10 lines of code.
+ *
+ * If successful, Relashio.v should compile.
+ *)
+let relashio c target : unit =
+  () (* Your code here *)
                 
 (* --- Spells --- *)
 
@@ -253,4 +282,12 @@ VERNAC COMMAND EXTEND Reducio CLASSIFIED AS SIDEFF
   [ reducio_tria target ]
 | [ "Reducio" "Maxima" constr(target) ] ->
   [ reducio_maxima target ]   
+END
+
+(* 
+ * Reduces the target to its normal size.
+ *)
+VERNAC COMMAND EXTEND Relashio CLASSIFIED AS SIDEFF
+| [ "Relashio" constr(c) "in" constr(target) ] ->
+  [ relashio c target ]
 END
