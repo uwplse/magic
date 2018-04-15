@@ -164,6 +164,27 @@ let reducio_duo target : unit =
  *)
 let reducio_tria target : unit =
   () (* Your code here *)
+
+(*
+ * Exercise 6 [20 points]: Implement a version of Reducio
+ * that handles cycles. So, for example,
+ * a term with factors of the following types:
+ *
+ * A -> B
+ * B -> C
+ * C -> D
+ * D -> B
+ * B -> E
+ *
+ * should reduce to a term with the following factors:
+ *
+ * A -> B
+ * B -> E
+ *
+ * If successful, ReducioMaxima.v should compile.
+ *)
+let reducio_maxima target : unit =
+  () (* Your code here *)
                 
 (* --- Spells --- *)
 
@@ -230,4 +251,6 @@ VERNAC COMMAND EXTEND Reducio CLASSIFIED AS SIDEFF
   [ reducio_duo target ]
 | [ "Reducio" "Tria" constr(target) ] ->
   [ reducio_tria target ]
+| [ "Reducio" "Maxima" constr(target) ] ->
+  [ reducio_maxima target ]   
 END

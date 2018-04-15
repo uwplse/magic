@@ -2,7 +2,7 @@ Require Import Arith NPeano.
 Require Import Magic.Wand.
 
 (*
- * Test for the fourth exercise.
+ * Test for the fifth exercise.
  *)
 
 (* --- Regresssion test --- *)
