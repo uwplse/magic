@@ -1,6 +1,12 @@
 This plugin is to help you learn how to write fun spells (supertactics) and understand the magic behind them.
 There are a number of example spells and some exercises to try out yourself.
 
+# Citing
+
+If you build on any of the commands or tactics here and then publish a paper, please cite the 
+[PUMPKIN PATCH](http://tlringer.github.io/pdf/pumpkinpaper.pdf) paper, since the interesting commands and tactics
+all build on the factoring component from that paper.
+
 # Building
 
 The plugin runs on Coq 8.6. Just run `make`.
