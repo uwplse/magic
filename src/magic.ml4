@@ -188,7 +188,7 @@ let reducio_maxima target : unit =
   () (* Your code here *)
 
 (*
- * Exercise 7 [10 points] The Relashio spell releases the target
+ * Exercise 7 [15 points] The Relashio spell releases the target
  * from a binding. Implement a simple version of Relashio
  * that takes a constant c and abstracts all terms convertible with c
  * in target at the highest level possible.
@@ -214,6 +214,24 @@ let reducio_maxima target : unit =
  *)
 let relashio c target : unit =
   () (* Your code here *)
+
+(*
+ * Bonus (I'll buy you a beer if you're the first one
+ * to implement this): Implement the Lumos tactic, which helps
+ * the user when they are stuck during an inductive proof. 
+ * Lumos lights up the way by generating an intermediate goal and inductive
+ * hypothesis that are generalized versions of the current goal and inductive
+ * hypothesis. his allows the user to play around trying to prove the 
+ * intermediate goal, and see if that's the inductive hypothesis they 
+ * really want. They can then go back and change the theorem statement 
+ * appropriately.
+ *
+ * Hint: You'll want something similar to all_conv_substs to generalize
+ * the inductive hypothesis, but you'll likely need to be smarter about how you
+ * generalize if you want to produce useful goals.
+ *)
+let lumos_in trm :  unit Proofview.tactic =
+  Proofview.tclUNIT () (* Your code here *)
                 
 (* --- Spells --- *)
 
@@ -285,9 +303,18 @@ VERNAC COMMAND EXTEND Reducio CLASSIFIED AS SIDEFF
 END
 
 (* 
- * Reduces the target to its normal size.
+ * Releases the binding to c in target.
  *)
 VERNAC COMMAND EXTEND Relashio CLASSIFIED AS SIDEFF
 | [ "Relashio" constr(c) "in" constr(target) ] ->
   [ relashio c target ]
 END
+
+(*
+ * Helps a user who is stuck during induction.
+ *)
+TACTIC EXTEND lumos
+| [ "lumos" constr(target) ] ->
+  [ lumos_in target ]
+END
+    
