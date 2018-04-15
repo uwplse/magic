@@ -8,7 +8,7 @@ The plugin runs on Coq 8.6. Just run `make`.
 # Example Spells
 
 There are a number of toy example spells in [magic.ml4](/src/magic.ml4) for the sake of demonstration.
-The test code for these examples is in [Example.v](/coq/Example.v). Since these are purely demonstrative,
+The test code for these examples is in [Examples.v](/coq/Examples.v). Since these are purely demonstrative,
 they are not guaranteed to work for code outside of these examples.
 
 Many of the examples are simple versions of functionality from [PUMPKIN PATCH](http://github.com/uwplse/PUMPKIN-PATCH).
