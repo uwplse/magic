@@ -12,6 +12,7 @@ open Evd
 open Coqterms
 open Sectumsempra
 open Debruijn
+open Printing (* useful for debugging *)
 
 (*
  * Check if two consecutive factors are inverses
@@ -53,7 +54,7 @@ let rec filter_inverses (evd : evar_map) (fs : factors) =
  *)
 let reducio_body (env : env) (evd : evar_map) (trm : types) : types =
   let fs = List.rev (factor_term env evd trm) in
-  let red_fs = List.hd fs :: (filter_inverses evd (List.tl fs)) in
+  let red_fs = List.hd fs :: (List.rev (filter_inverses evd (List.tl fs))) in
   let red = apply_factors red_fs in
   if has_type env evd (infer_type env evd trm) red then
     reduce_term env evd red

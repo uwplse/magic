@@ -121,6 +121,49 @@ let reducio target : unit =
   let red = reducio_body env evd body in
   define_term red_id env evd red;
   Printf.printf "Defined %s\n" (Id.to_string red_id)
+
+(*
+ * Exercise 4 [15 points]: Implement a version of Reducio that
+ * also gets rid of factors with the identity type.
+ * That is, a term with the following factors:
+ *
+ * A -> B
+ * B -> C
+ * C -> C
+ * C -> B
+ * B -> D
+ *
+ * should reduce to a term with the following factors:
+ *
+ * A -> B
+ * B -> D
+ *
+ * If successful, ReducioDuo.v should compile.
+ *)
+let reducio_duo target : unit =
+  () (* Your code here *)
+                
+(*
+ * Exercise 5 [15 points]: Implement a version of Reducio
+ * that handles nested inverses. So, for example,
+ * a term with factors of the following types:
+ *
+ * A -> B
+ * B -> C
+ * C -> D
+ * D -> C
+ * C -> B
+ * B -> E
+ *
+ * should reduce to a term with the following factors:
+ *
+ * A -> B
+ * B -> E
+ *
+ * If successful, ReducioTria.v should compile.
+ *)
+let reducio_tria target : unit =
+  () (* Your code here *)
                 
 (* --- Spells --- *)
 
@@ -183,4 +226,8 @@ END
 VERNAC COMMAND EXTEND Reducio CLASSIFIED AS SIDEFF
 | [ "Reducio" constr(target) ] ->
   [ reducio target ]
+| [ "Reducio" "Duo" constr(target) ] ->
+  [ reducio_duo target ]
+| [ "Reducio" "Tria" constr(target) ] ->
+  [ reducio_tria target ]
 END
