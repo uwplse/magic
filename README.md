@@ -1,4 +1,5 @@
-This plugin is to help you learn how to write fun spells (supertactics) and understand the magic behind them.
+This plugin is to help you learn how to write fun spells (supertactics) using the Coq plugin
+infrastructure and understand the magic behind them.
 There are a number of example spells and some exercises to try out yourself.
 
 # Citing
