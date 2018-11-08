@@ -18,7 +18,7 @@
  * other kinds of bodies, or see the PUMPKIN PATCH paper.
  *)
 
-open Term
+open Constr
 open Names
 open Environ
 open Evd
@@ -35,7 +35,7 @@ open Sectumsempra
  *)
 let invert_rewrite (env : env) (evd : evar_map) (trm : types) : (env * types) option =
   let trm = reduce_term env evd trm in
-  match kind_of_term trm with
+  match kind trm with
   | Lambda (n, t, b) ->
      let env_b = push_local (n, t) env in
      let t' = unshift (reduce_term env_b evd (infer_type env_b evd b)) in
