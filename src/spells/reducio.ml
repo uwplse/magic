@@ -7,7 +7,7 @@
  *)
 
 open Environ
-open Term
+open Constr
 open Evd
 open Coqterms
 open Sectumsempra
