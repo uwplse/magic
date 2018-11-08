@@ -4,7 +4,7 @@
 
 open Environ
 open Evd
-open Term
+open Constr
 open Names
 
 (* Get a fresh constant identifier *)
@@ -21,4 +21,4 @@ val extern : env -> evar_map -> types -> Constrexpr.constr_expr
 (* --- Definitions --- *)
 
 (* Define a new Coq term *)
-val define_term : Id.t -> env -> evar_map -> types -> unit
+val define_term : Id.t -> evar_map -> types -> unit

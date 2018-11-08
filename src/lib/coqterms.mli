@@ -4,7 +4,7 @@
 
 open Environ
 open Evd
-open Term
+open Constr
 open Declarations
 open Names
 
@@ -17,8 +17,7 @@ val eq_sym : types
 (* --- Term and environment management --- *)
                
 (* Convertibility *)
-val convertible :
-  ?reds:Names.transparent_state -> env -> evar_map -> types -> types -> bool
+val convertible : env -> evar_map -> types -> types -> bool
 
 (* Infer the type of a term in an environment *)
 val infer_type : env -> evar_map -> types -> types

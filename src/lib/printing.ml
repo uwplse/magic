@@ -9,11 +9,9 @@
 open Format
 open Names
 open Univ
-open Term
+open Constr
 open Environ
 open Coqterms
-open Printer
-open Basics
 open Collections
 
 module CRD = Context.Rel.Declaration
@@ -34,10 +32,6 @@ let name_as_string (n : name) : string =
   | Name id -> string_of_id id
   | Anonymous -> "_"
 
-(* Pretty prints a term using Coq's pretty printer *)
-let print_constr (fmt : formatter) (c : constr) : unit  =
-  Pp.pp_with fmt (Printer.pr_constr c)
-
 (* Pretty prints a universe level *)
 let print_univ_level (fmt : formatter) (l : Level.t) =
   Pp.pp_with fmt (Level.pr l)
@@ -51,12 +45,12 @@ let universe_as_string u =
 (* Gets a sort as a string *)
 let sort_as_string s =
   match s with
-  | Prop _ -> if s = prop_sort then "Prop" else "Set"
-  | Type u -> Printf.sprintf "Type %s" (universe_as_string u)
+  | Term.Prop _ -> if s = Sorts.prop then "Prop" else "Set"
+  | Term.Type u -> Printf.sprintf "Type %s" (universe_as_string u)
 
 (* Prints a term *)
 let rec term_as_string (env : env) (trm : types) =
-  match kind_of_term trm with
+  match kind trm with
   | Rel i ->
      (try
        let (n, _, _) = CRD.to_tuple @@ lookup_rel i env in

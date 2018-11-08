@@ -5,12 +5,8 @@
  * if they are useful for you.
  *)
 
-open Collections
-open Term
+open Constr
 open Environ
-open Evd
-open Coqterms
-open Names
 
 (*
  * Map a function over a term in an environment

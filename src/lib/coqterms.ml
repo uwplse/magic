@@ -5,7 +5,7 @@
 open Basics
 open Environ
 open Declarations
-open Term
+open Constr
 open Names
 open Evd
 open Collections
@@ -15,11 +15,15 @@ module CRD = Context.Rel.Declaration
 (* --- Basic term and environment management --- *)
     
 (* Convertibility *)
-let convertible = Reductionops.is_conv
+let convertible env evm (trm1 : types) (trm2 : types) : bool =
+  let etrm1 = EConstr.of_constr trm1 in
+  let etrm2 = EConstr.of_constr trm2 in
+  Reductionops.is_conv env evm etrm1 etrm2
 
 (* Infer a type (can cause universe leaks; not a problem for this plugin) *)
 let infer_type (env : env) (evd : evar_map) (trm : types) : types =
-  Typing.unsafe_type_of env evd trm
+  let jmt = Typeops.infer env trm in
+  j_type jmt
 
 (* Check whether a term has a given type *)
 let has_type (env : env) (evd : evar_map) (typ : types) (trm : types) : bool =
@@ -30,7 +34,9 @@ let has_type (env : env) (evd : evar_map) (typ : types) (trm : types) : bool =
                     
 (* Default reducer *)
 let reduce_term (env : env) (evd : evar_map) (trm : types) : types =
-  Reductionops.nf_betaiotazeta evd trm
+  EConstr.to_constr
+    evd
+    (Reductionops.nf_betaiotazeta env evd (EConstr.of_constr trm))
 
 (* Default reducers on types *)
 let reduce_type (env : env) (evd : evar_map) (trm : types) : types =
@@ -60,7 +66,7 @@ let bindings_for_fix (names : name array) (typs : types array) : CRD.t list =
 
 (* Lookup a definition *)
 let lookup_definition (env : env) (def : types) : types =
-  match kind_of_term def with
+  match kind def with
   | Const (c, u) ->
      let c_body = (lookup_constant c env).const_body in
      (match c_body with
@@ -83,7 +89,7 @@ let rec unwrap_definition (env : env) (trm : types) : types =
   
 (* Get the name of a term if it's constant, otherwise fail *)
 let name_of_const (trm : types) =
- match kind_of_term trm with
+ match kind trm with
  | Const (c, u) ->
     let kn = Constant.canonical c in
     let (modpath, dirpath, label) = KerName.repr kn in
@@ -109,7 +115,7 @@ let fresh_with_prefix (prefix : string) () : Id.t =
                  
 (* Zoom all the way into a lambda term *)
 let rec zoom_lambda_term (env : env) (trm : types) : env * types =
-  match kind_of_term trm with
+  match kind trm with
   | Lambda (n, t, b) ->
      zoom_lambda_term (push_local (n, t) env) b
   | _ ->
@@ -177,11 +183,11 @@ let eq_sym : types =
                        
 (*
  * Check if a term is a rewrite via eq_ind or eq_ind_r
- * For efficiency, just check eq_constr
+ * For efficiency, just check syntactic equality
  * Don't consider convertible terms for now
  *)
 let is_rewrite (trm : types) : bool =
-  eq_constr trm eq_ind_r ||
-  eq_constr trm eq_ind ||
-  eq_constr trm eq_rec_r ||
-  eq_constr trm eq_rec
+  equal trm eq_ind_r ||
+  equal trm eq_ind ||
+  equal trm eq_rec_r ||
+  equal trm eq_rec

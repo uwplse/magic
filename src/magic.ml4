@@ -1,13 +1,14 @@
 DECLARE PLUGIN "wand"
 
-open Term
+open Stdarg
 open Names
 open Environ
-open Constrarg
+open Constr
 open Evd
 open Tactics
 open Basics
 open Coqterms
+open Ltac_plugin
 open Substitution (* useful for later exercises *)
 open Printing (* useful for debugging *)
 
@@ -31,9 +32,9 @@ open Reducio
  *)
        
 (* Tactic version of Geminio *)
-let geminio_in (trm : types) : unit Proofview.tactic =
-  let (evd, env) = Lemmas.get_current_context () in
-  letin_pat_tac None Anonymous ((evd, evd), trm) Locusops.nowhere
+let geminio_in (etrm : EConstr.constr) : unit Proofview.tactic =
+  let (evm, env) = Pfedit.get_current_context () in
+  letin_pat_tac false None Anonymous (evm, etrm) Locusops.nowhere
 
 (*
  * Exercise 1 [2 points]: Implement a command version of Geminio,
@@ -58,15 +59,15 @@ let geminio target : unit =
                 
 (* Sectumsempra *)
 let sectumsempra target : unit =
-  let (evd, env) = Lemmas.get_current_context () in
-  let trm = intern env evd target in
+  let (evm, env) = Pfedit.get_current_context () in
+  let trm = intern env evm target in
   let id = id_or_default trm name_of_const (fresh_with_prefix "factor") in
   let body = unwrap_definition env trm in
-  let fs = sectumsempra_body env evd body in
+  let fs = sectumsempra_body env evm body in
   List.iteri
     (fun i lemma ->
       let lemma_id = with_suffix (string_of_int i) id in
-      define_term lemma_id env evd lemma;
+      define_term lemma_id evm lemma;
       Printf.printf "Defined %s\n" (Id.to_string lemma_id))
     fs
 
@@ -83,44 +84,45 @@ let sectumsempra_in trm : unit Proofview.tactic =
   Proofview.tclUNIT () (* Your code here *)
 
 (* Common code for Levicorpus *)
-let levicorpus_common env evd trm define =
-  (* Your extended code here *)
-  let inverted = levicorpus_body env evd trm in
+let levicorpus_common env evm trm define =
+  let inverted = levicorpus_body env evm trm in
   if Option.has_some inverted then
     let flipped = Option.get inverted in
-    define env evd flipped
+    define evm flipped
   else
     failwith "Could not flip the body upside-down; are you sure this is a human?"
 
 (* Tactic version of Levicorpus *)
-let levicorpus_in (trm : types) : unit Proofview.tactic =
-  let (evd, env) = Lemmas.get_current_context () in
+let levicorpus_in (etrm : EConstr.t) : unit Proofview.tactic =
+  let (evm, env) = Pfedit.get_current_context () in
+  let trm = EConstr.to_constr evm etrm in
   let body = unwrap_definition env trm in
-  let define env evd trm =
-    letin_pat_tac None Anonymous ((evd, evd), trm) Locusops.nowhere
-  in levicorpus_common env evd body define
+  let define evm trm =
+    let etrm = EConstr.of_constr trm in
+    letin_pat_tac false None Anonymous (evm, etrm) Locusops.nowhere
+  in levicorpus_common env evm body define
 
 (* Command version of Levicorpus *)
 let levicorpus target : unit =
-  let (evd, env) = Lemmas.get_current_context () in
-  let trm = intern env evd target in
+  let (evm, env) = Pfedit.get_current_context () in
+  let trm = intern env evm target in
   let name_of_inv t = with_suffix "inv" (name_of_const t) in
   let inv_id = id_or_default trm name_of_inv (fresh_with_prefix "inverse") in
   let body = unwrap_definition env trm in
-  let define env evd trm =
-    define_term inv_id env evd trm;
+  let define evm trm =
+    define_term inv_id evm trm;
     Printf.printf "Defined %s\n" (Id.to_string inv_id)
-  in levicorpus_common env evd body define
+  in levicorpus_common env evm body define
 
 (* Reducio *)
 let reducio target : unit =
-  let (evd, env) = Lemmas.get_current_context () in
-  let trm = intern env evd target in
+  let (evm, env) = Pfedit.get_current_context () in
+  let trm = intern env evm target in
   let name_of_red t = with_suffix "red" (name_of_const t) in
   let red_id = id_or_default trm name_of_red (fresh_with_prefix "reduced") in
   let body = unwrap_definition env trm in
-  let red = reducio_body env evd body in
-  define_term red_id env evd red;
+  let red = reducio_body env evm body in
+  define_term red_id evm red;
   Printf.printf "Defined %s\n" (Id.to_string red_id)
 
 (*

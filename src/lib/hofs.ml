@@ -3,9 +3,8 @@
  *)
 
 open Collections
-open Term
+open Constr
 open Environ
-open Evd
 open Coqterms
 open Names
 
@@ -25,7 +24,7 @@ let map_rec_env_fix map_rec d env a (ns : name array) (ts : types array) =
  *)
 let rec map_term_env f d (env : env) (a : 'a) (trm : types) : types =
   let map_rec = map_term_env f d in
-  match kind_of_term trm with
+  match kind trm with
   | Cast (c, k, t) ->
      let c' = map_rec env a c in
      let t' = map_rec env a t in
@@ -79,7 +78,7 @@ let rec map_term_env_if p f d (env : env) (a : 'a) (trm : types) : types =
   if p env a trm then
     f env a trm
   else
-    match kind_of_term trm with
+    match kind trm with
     | Cast (c, k, t) ->
        let c' = map_rec env a c in
        let t' = map_rec env a t in

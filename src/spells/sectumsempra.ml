@@ -9,7 +9,7 @@
  * exist; if you are interested, let me know.
  *)
 
-open Term
+open Constr
 open Names
 open Environ
 open Evd
@@ -71,7 +71,7 @@ let rec find_path (env : env) (evd : evar_map) (trm : types) : factors =
   if is_assumption env evd trm then
     [(env, trm)]
   else
-    match kind_of_term trm with
+    match kind trm with
     | App (f, args) ->
        let paths = Array.map (find_path env evd) args in
        let nonempty_paths =

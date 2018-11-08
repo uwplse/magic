@@ -18,8 +18,7 @@
  * other kinds of bodies, or see the PUMPKIN PATCH paper.
  *)
 
-open Term
-open Names
+open Constr
 open Environ
 open Evd
 open Collections
@@ -35,12 +34,11 @@ open Sectumsempra
  *)
 let invert_rewrite (env : env) (evd : evar_map) (trm : types) : (env * types) option =
   let trm = reduce_term env evd trm in
-  match kind_of_term trm with
+  match kind trm with
   | Lambda (n, t, b) ->
      let env_b = push_local (n, t) env in
      let t' = unshift (reduce_term env_b evd (infer_type env_b evd b)) in
      let trm' = all_conv_substs env evd (t, t') trm in
-     let goal_type = mkProd (n, t', t) in
      let (n, t', b') = destLambda trm' in
      if isApp b' && is_rewrite (fst (destApp b')) then
        let (f, args) = destApp b' in
