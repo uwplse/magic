@@ -6,9 +6,8 @@
  *)
 
 open Environ
-open Term
+open Constr
 open Hofs
-open Evd
 
 (*
  * Map a function over a term, when the environment doesn't matter
@@ -26,10 +25,6 @@ let unshift_i_by (n : int) (i : int) : int =
 let shift_i_by (n : int) (i : int) : int =
   unshift_i_by (- n) i
 
-(* Unshift an index *)
-let unshift_i (i : int) : int =
-  unshift_i_by 1 i
-
 (* Shift an index *)
 let shift_i (i : int) : int =
   shift_i_by 1 i
@@ -41,7 +36,7 @@ let shift_i (i : int) : int =
 let unshift_local (max : int) (n : int) (trm : types) : types =
   map_term
     (fun (m, adj) t ->
-      match kind_of_term t with
+      match kind t with
       | Rel i ->
          let i' = if i > m then unshift_i_by adj i else i in
          mkRel i'
@@ -50,13 +45,6 @@ let unshift_local (max : int) (n : int) (trm : types) : types =
     (fun (m, adj) -> (shift_i m, adj))
     (max, n)
     trm
-
-(*
- * Shifts a term by n if it is greater than the maximum index
- * max of a local binding
- *)
-let shift_local (max : int) (n : int) (trm : types) : types =
-  unshift_local max (- n) trm
 
 (* Decrement the relative indexes of a term t by n *)
 let unshift_by (n : int) (trm : types) : types =

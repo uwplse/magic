@@ -1,7 +1,6 @@
-open Term
+open Constr
 open Environ
 open Evd
-open Printing (* useful for debugging *)
 
 (*
  * The Sectumsempra [Snape (1971)] spell cuts the body of a proof into pieces.

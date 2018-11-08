@@ -3,10 +3,8 @@
  *)
 
 open Environ
-open Term
+open Constr
 open Evd
-open Hofs
-open Debruijn
 
 (* Map a substitution over subterms of a term *)
 val all_substs :

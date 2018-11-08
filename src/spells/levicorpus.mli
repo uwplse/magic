@@ -1,6 +1,6 @@
 open Environ
 open Evd
-open Term
+open Constr
 
 (*
  * Levicorpus flips a body upside-down (inverts a proof body).

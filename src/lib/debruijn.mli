@@ -7,10 +7,7 @@
  * the sake of this plugin.
  *)
 
-open Environ
-open Term
-open Hofs
-open Evd
+open Constr
 
 (* Decrement the relative indexes of a term t by n *)
 val unshift_by : int -> types -> types
