@@ -8,6 +8,7 @@ open Evd
 open Tactics
 open Basics
 open Coqterms
+open Ltac_plugin
 open Substitution (* useful for later exercises *)
 open Printing (* useful for debugging *)
 
