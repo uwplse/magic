@@ -38,13 +38,13 @@ val push_local : (name * types) -> env -> env
 val push_in : (name * types * types) -> env -> env
                     
 (* Lookup n rels and remove then *)
-val lookup_pop : int -> env -> (env * CRD.t list)
+val lookup_pop : int -> env -> (env * rel_declaration list)
 
 (* Return a list of all indexes in env, starting with 1 *)
 val all_rel_indexes : env -> int list
 
 (* Get bindings for a fixpoint *)
-val bindings_for_fix : name array -> types array -> CRD.t list
+val bindings_for_fix : name array -> types array -> rel_declaration list
 
 (* Lookup a definition *)
 val lookup_definition : env -> types -> types

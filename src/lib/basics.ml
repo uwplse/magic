@@ -60,7 +60,7 @@ let edeclare ident (_, poly, _ as k) ~opaque sigma udecl body tyopt imps hook re
   let body = to_constr sigma body in
   let tyopt = Option.map (to_constr sigma) tyopt in
   let uvars_fold uvars c =
-    Univ.LSet.union uvars (Univops.universes_of_constr env c) in
+    Univ.LSet.union uvars (Univops.universes_of_constr c) in
   let uvars = List.fold_left uvars_fold Univ.LSet.empty
     (Option.List.cons tyopt [body]) in
   let sigma = Evd.restrict_universe_context sigma uvars in
@@ -72,7 +72,7 @@ let edeclare ident (_, poly, _ as k) ~opaque sigma udecl body tyopt imps hook re
 (* Define a new Coq term *)
 let define_term (n : Id.t) (evm : evar_map) (trm : types) =
   let k = (Global, Flags.is_universe_polymorphism(), Definition) in
-  let udecl = Univdecls.default_univ_decl in
+  let udecl = UState.default_univ_decl in
   let nohook = Lemmas.mk_hook (fun _ x -> x) in
   let etrm = EConstr.of_constr trm in
   ignore (edeclare n k ~opaque:false evm udecl etrm None [] nohook false)

@@ -10,7 +10,7 @@ all build on components from that paper.
 
 # Building
 
-The plugin runs on Coq 8.8. Just run `make`.
+The plugin runs on Coq 8.9. Just run: `make`.
 
 # Example Spells
 

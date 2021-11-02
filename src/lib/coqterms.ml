@@ -58,7 +58,7 @@ let all_rel_indexes (env : env) : int list =
   from_one_to (nb_rel env)
 
 (* Push bindings for a fixpoint *)
-let bindings_for_fix (names : name array) (typs : types array) : CRD.t list =
+let bindings_for_fix (names : name array) (typs : types array) : rel_declaration list =
   Array.to_list
     (CArray.map2_i
        (fun i name typ -> CRD.LocalAssum (name, Vars.lift i typ))
